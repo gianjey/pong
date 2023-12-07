@@ -17,6 +17,10 @@ executable with the '-f' command line argument to run in fullscreen
 I will take any feature requests like updating the AI or movement animation if there is any demand. Or 
 just clone the code and do it yourself. Enjoy!
 
+### Update 2023
+
+Added Visual studio 2022 project for pong in the C programming language with SDL2 2.28.5 
+
 ## Controls
 * space bar to start a game
 * arrow keys for movement
