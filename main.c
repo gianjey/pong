@@ -872,15 +872,15 @@ int init(int width, int height, int argc, char* args[])
 	}
 
 	//Load music
-	/*gMusic = Mix_LoadMUS("21_sound_effects_and_music/beat.wav");
+	gMusic = Mix_LoadMUS("sound/198896__bone666138__8-bit-circus-music.wav");
 	if (gMusic == NULL)
 	{
 		printf("Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError());
 		return 1;
-	}*/
+	}
 
 	//Load sound effects
-	gBallPoint = Mix_LoadWAV("sound/711657__discofield__stone-crash.wav");
+	gBallPoint = Mix_LoadWAV("sound/391658__jeckkech__collision.wav");
 	if (gBallPoint == NULL)
 	{
 		printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
@@ -900,6 +900,9 @@ int init(int width, int height, int argc, char* args[])
 		printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
 		return 1;
 	}
+
+	//Music start
+	Mix_PlayMusic(gMusic, -1);
 
 	return 0;
 }
