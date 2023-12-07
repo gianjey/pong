@@ -14,7 +14,8 @@
 //#pragma comment(lib,"SDL2main.lib")
 
 // Using libs SDl, glibc
-#include <SDL.h> //SDL version 2.0
+#include <SDL.h> //SDL version 2.28.5
+#include <SDL_mixer.h> //SDL Mixer version 2.6.3
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -41,6 +42,7 @@ static ball_t ball;
 static paddle_t paddle[2];
 int score[] = { 0,0 };
 int width, height;	//used if fullscreen
+int runGameOver = 0; //used for play game over sound
 
 SDL_Window* window = NULL;	//The windows we'll be rendering to
 SDL_Renderer* renderer;	//The renderer SDL will use to draw to the screen
@@ -53,6 +55,14 @@ static SDL_Surface* end;
 
 //textures
 SDL_Texture* screen_texture;
+
+//The music that will be played
+Mix_Music* gMusic = NULL;
+
+//The sound effects that will be used
+Mix_Chunk* gBallCollision = NULL;
+Mix_Chunk* gBallPoint = NULL;
+Mix_Chunk* gGameOver = NULL;
 
 //initialise starting position and sizes of game elements
 static void init_game() {
@@ -72,6 +82,9 @@ static void init_game() {
 	paddle[1].y = screen->h / 2 - 50;
 	paddle[1].w = 10;
 	paddle[1].h = 50;
+
+	//flag for play game over sound
+	runGameOver = 0;
 }
 
 int check_score() {
@@ -81,13 +94,15 @@ int check_score() {
 	for (i = 0; i < 2; i++)
 	{
 		//check if score is @ the score win limit
-		if (score[i] == 10) {
+		if (score[i] == 10)
+		{
 			//reset scores
 			score[0] = 0;
 			score[1] = 0;
 
 			//return 1 if player 1 score @ limit
-			if (i == 0) {
+			if (i == 0) 
+			{
 				return 1;
 			}
 			else
@@ -119,22 +134,28 @@ int check_collision(ball_t a, paddle_t b)
 	top_b = b.y;
 	bottom_b = b.y + b.h;
 
-	if (left_a > right_b) {
+	if (left_a > right_b) 
+	{
 		return 0;
 	}
 
-	if (right_a < left_b) {
+	if (right_a < left_b)
+	{
 		return 0;
 	}
 
-	if (top_a > bottom_b) {
+	if (top_a > bottom_b) 
+	{
 		return 0;
 	}
 
-	if (bottom_a < top_b) {
+	if (bottom_a < top_b) 
+	{
 		return 0;
 	}
 
+	//Play sound collision
+	Mix_PlayChannel(-1, gBallCollision, 0);
 	return 1;
 }
 
@@ -149,18 +170,24 @@ static void move_ball()
 	if (ball.x < 0)
 	{
 		score[1] += 1;
+		//Sound for point
+		Mix_PlayChannel(-1, gBallPoint, 0);
 		init_game();
 	}
 
 	if (ball.x > screen->w - 10)
 	{
 		score[0] += 1;
+		//Sound for point
+		Mix_PlayChannel(-1, gBallPoint, 0);
 		init_game();
 	}
 
 	if (ball.y < 0 || ball.y > screen->h - 10)
 	{
 		ball.dy = -ball.dy;
+		//Play sound collision
+		Mix_PlayChannel(-1, gBallCollision, 0);
 	}
 
 	//check for collision with the paddle
@@ -393,6 +420,13 @@ static void draw_game_over(int p)
 		SDL_BlitSurface(end, &cpu, screen, &dest);
 		break;
 	}
+
+	if (runGameOver == 0)
+	{
+		//Sound for game over
+		Mix_PlayChannel(-1, gGameOver, 0);
+		runGameOver = 1;
+	}
 }
 
 static void draw_menu()
@@ -413,23 +447,23 @@ static void draw_menu()
 	SDL_BlitSurface(title, &src, screen, &dest);
 }
 
-static void draw_background()
-{
-	SDL_Rect src;
-
-	//draw bg with net
-	src.x = 0;
-	src.y = 0;
-	src.w = screen->w;
-	src.h = screen->h;
-
-	////draw the backgorund
-	//int r = SDL_FillRect(screen,&src,0);
-
-	//if (r !=0){
-	//	printf("fill rectangle faliled in func draw_background()");
-	//}
-}
+//static void draw_background()
+//{
+//	SDL_Rect src;
+//
+//	//draw bg with net
+//	src.x = 0;
+//	src.y = 0;
+//	src.w = screen->w;
+//	src.h = screen->h;
+//
+//	////draw the backgorund
+//	//int r = SDL_FillRect(screen,&src,0);
+//
+//	//if (r !=0){
+//	//	printf("fill rectangle faliled in func draw_background()");
+//	//}
+//}
 
 static void draw_net()
 {
@@ -593,6 +627,7 @@ int main(int argc, char* args[])
 	int quit = 0;
 	int state = 0;
 	int r = 0;
+
 	Uint32 next_game_tick = SDL_GetTicks();
 
 	//Initialize the ball position data
@@ -718,13 +753,34 @@ int main(int argc, char* args[])
 	SDL_FreeSurface(numbermap);
 	SDL_FreeSurface(end);
 
+	screen = NULL;
+	title = NULL;
+	numbermap = NULL;
+	end = NULL;
+
+	//Free the sound effects
+	Mix_FreeChunk(gBallCollision);
+	Mix_FreeChunk(gBallPoint);
+	Mix_FreeChunk(gGameOver);
+
+	gBallCollision = NULL;
+	gBallPoint = NULL;
+	gGameOver = NULL;
+
+	//Free the music
+	Mix_FreeMusic(gMusic);
+	gMusic = NULL;
+
 	//free renderer and all textures used with it
 	SDL_DestroyRenderer(renderer);
+	renderer = NULL;
 
 	//Destroy window
 	SDL_DestroyWindow(window);
+	window = NULL;
 
 	//Quit SDL subsystems
+	Mix_Quit();
 	SDL_Quit();
 
 	return 0;
@@ -733,7 +789,7 @@ int main(int argc, char* args[])
 int init(int width, int height, int argc, char* args[])
 {
 	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		return 1;
@@ -778,7 +834,7 @@ int init(int width, int height, int argc, char* args[])
 	}
 
 	//Load the title image
-	title = SDL_LoadBMP("title.bmp");
+	title = SDL_LoadBMP("img/title.bmp");
 	if (title == NULL) {
 		printf("Could not Load title image! SDL_Error: %s\n", SDL_GetError());
 
@@ -786,7 +842,7 @@ int init(int width, int height, int argc, char* args[])
 	}
 
 	//Load the numbermap image
-	numbermap = SDL_LoadBMP("numbermap.bmp");
+	numbermap = SDL_LoadBMP("img/numbermap.bmp");
 
 	if (numbermap == NULL) {
 		printf("Could not Load numbermap image! SDL_Error: %s\n", SDL_GetError());
@@ -795,7 +851,7 @@ int init(int width, int height, int argc, char* args[])
 	}
 
 	//Load the gameover image
-	end = SDL_LoadBMP("gameover.bmp");
+	end = SDL_LoadBMP("img/gameover.bmp");
 
 	if (end == NULL) {
 		printf("Could not Load title image! SDL_Error: %s\n", SDL_GetError());
@@ -807,6 +863,43 @@ int init(int width, int height, int argc, char* args[])
 	Uint32 colorkey = SDL_MapRGB(title->format, 255, 0, 255);
 	SDL_SetColorKey(title, SDL_TRUE, colorkey);
 	SDL_SetColorKey(numbermap, SDL_TRUE, colorkey);
+
+	//Initialize SDL_mixer
+	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+	{
+		printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+		return 1;
+	}
+
+	//Load music
+	/*gMusic = Mix_LoadMUS("21_sound_effects_and_music/beat.wav");
+	if (gMusic == NULL)
+	{
+		printf("Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError());
+		return 1;
+	}*/
+
+	//Load sound effects
+	gBallPoint = Mix_LoadWAV("sound/711657__discofield__stone-crash.wav");
+	if (gBallPoint == NULL)
+	{
+		printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return 1;
+	}
+
+	gBallCollision = Mix_LoadWAV("sound/4359__noisecollector__pongblipf4.wav");
+	if (gBallCollision == NULL)
+	{
+		printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return 1;
+	}
+
+	gGameOver = Mix_LoadWAV("sound/412168__screamstudio__arcade-game-over.wav");
+	if (gGameOver == NULL)
+	{
+		printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return 1;
+	}
 
 	return 0;
 }

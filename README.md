@@ -19,7 +19,8 @@ just clone the code and do it yourself. Enjoy!
 
 ### Update 2023
 
-Added Visual studio 2022 project for pong in the C programming language with SDL2 2.28.5 
+Added Visual studio 2022 project for pong in the C programming language with SDL2 2.28.5. 
+Added SDL2_mixer-2.6.3 for sounds effects.
 
 ## Controls
 * space bar to start a game
